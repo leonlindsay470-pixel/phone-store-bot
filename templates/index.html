@@ -1,0 +1,154 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>{{ config.business.name }} Omni Chat</title>
+  <style>
+    :root {
+      --bg: #0f172a;
+      --panel: #111827;
+      --card: #ffffff;
+      --muted: #64748b;
+      --line: #e5e7eb;
+      --accent: #111827;
+      --bubble: #f1f5f9;
+      --bubble-user: #dcfce7;
+    }
+    * { box-sizing: border-box; }
+    body { margin: 0; font-family: Arial, sans-serif; background: #eef2ff; color: #0f172a; }
+    .wrap { max-width: 1160px; margin: 0 auto; padding: 24px 16px 40px; display: grid; grid-template-columns: 360px 1fr; gap: 24px; }
+    .card { background: var(--card); border-radius: 24px; box-shadow: 0 20px 50px rgba(15, 23, 42, 0.08); }
+    .side { padding: 24px; }
+    .pill { display: inline-block; background: #e0e7ff; color: #3730a3; border-radius: 999px; padding: 8px 12px; font-size: 12px; font-weight: 700; }
+    h1 { margin: 14px 0 8px; font-size: 30px; }
+    .muted { color: var(--muted); line-height: 1.6; }
+    .info { margin-top: 20px; display: grid; gap: 12px; }
+    .info div { padding: 12px 14px; background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 16px; }
+    ul { padding-left: 18px; }
+    .chat-shell { overflow: hidden; display: grid; grid-template-rows: auto 1fr auto auto; min-height: 720px; }
+    .chat-top { background: linear-gradient(135deg, #111827, #1f2937); color: white; padding: 22px 24px; }
+    .chat-top h2 { margin: 0; }
+    .chat-top p { margin: 8px 0 0; color: #cbd5e1; }
+    .channel-row { margin-top: 14px; display: flex; gap: 10px; flex-wrap: wrap; }
+    .channel-chip { background: rgba(255,255,255,0.12); border-radius: 999px; padding: 8px 12px; font-size: 13px; }
+    .chat-window { padding: 20px; background: #f8fafc; overflow-y: auto; min-height: 420px; }
+    .msg { max-width: 78%; padding: 12px 14px; border-radius: 18px; line-height: 1.45; margin: 12px 0; white-space: pre-wrap; }
+    .msg.bot { background: var(--bubble); border-bottom-left-radius: 6px; }
+    .msg.user { background: var(--bubble-user); margin-left: auto; border-bottom-right-radius: 6px; }
+    .quick-wrap { padding: 16px 20px 0; display: flex; flex-wrap: wrap; gap: 10px; }
+    .quick-btn, #sendBtn {
+      border: none; cursor: pointer; border-radius: 999px; padding: 11px 14px; font-weight: 600;
+    }
+    .quick-btn { background: #e2e8f0; }
+    .composer { padding: 16px 20px 20px; display: flex; gap: 10px; }
+    .composer input { flex: 1; border-radius: 999px; border: 1px solid #cbd5e1; padding: 14px 16px; font-size: 16px; }
+    #sendBtn { background: #111827; color: white; min-width: 96px; }
+    .links { margin-top: 18px; display: flex; gap: 12px; flex-wrap: wrap; }
+    a.btn { text-decoration: none; color: #111827; background: #e2e8f0; padding: 10px 14px; border-radius: 12px; font-weight: 700; }
+    @media (max-width: 900px) {
+      .wrap { grid-template-columns: 1fr; }
+      .chat-shell { min-height: 640px; }
+    }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <section class="card side">
+      <span class="pill">Phone Store Omnichannel Bot</span>
+      <h1>{{ config.business.name }}</h1>
+      <p class="muted">{{ config.business.tagline }}</p>
+      <p class="muted">{{ config.business.about }}</p>
+
+      <div class="info">
+        <div><strong>Hours:</strong> {{ config.business.hours }}</div>
+        <div><strong>Location:</strong> {{ config.business.location }}</div>
+        <div><strong>Phone:</strong> {{ config.business.phone }}</div>
+        <div><strong>Email:</strong> {{ config.business.email }}</div>
+      </div>
+
+      <h3>What it handles</h3>
+      <ul>
+        {% for offer in config.offers %}
+          <li>{{ offer }}</li>
+        {% endfor %}
+      </ul>
+
+      <div class="links">
+        <a class="btn" href="/dashboard">Dashboard</a>
+        <a class="btn" href="/settings">Customize presets</a>
+      </div>
+    </section>
+
+    <section class="card chat-shell">
+      <div class="chat-top">
+        <h2>Website demo</h2>
+        <p>Same reply engine can power website chat, WhatsApp, and Instagram DM.</p>
+        <div class="channel-row">
+          <span class="channel-chip">Web</span>
+          <span class="channel-chip">WhatsApp webhook ready</span>
+          <span class="channel-chip">Instagram webhook ready</span>
+        </div>
+      </div>
+
+      <div id="chatWindow" class="chat-window"></div>
+
+      <div class="quick-wrap" id="quickWrap"></div>
+
+      <div class="composer">
+        <input id="messageInput" type="text" placeholder="Ask about a phone, price, delivery, or trade-in..." />
+        <button id="sendBtn">Send</button>
+      </div>
+    </section>
+  </div>
+
+  <script>
+    const chatWindow = document.getElementById('chatWindow');
+    const messageInput = document.getElementById('messageInput');
+    const sendBtn = document.getElementById('sendBtn');
+    const quickWrap = document.getElementById('quickWrap');
+
+    function addMessage(text, sender) {
+      const div = document.createElement('div');
+      div.className = `msg ${sender}`;
+      div.textContent = text;
+      chatWindow.appendChild(div);
+      chatWindow.scrollTop = chatWindow.scrollHeight;
+    }
+
+    async function loadQuickReplies() {
+      const res = await fetch('/api/presets');
+      const data = await res.json();
+      quickWrap.innerHTML = '';
+      (data.quick_replies || []).forEach(text => {
+        const btn = document.createElement('button');
+        btn.className = 'quick-btn';
+        btn.textContent = text;
+        btn.addEventListener('click', () => sendMessage(text));
+        quickWrap.appendChild(btn);
+      });
+    }
+
+    async function sendMessage(text) {
+      if (!text.trim()) return;
+      addMessage(text, 'user');
+      messageInput.value = '';
+      const res = await fetch('/api/chat', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ message: text })
+      });
+      const data = await res.json();
+      addMessage(data.reply || 'Something went wrong.', 'bot');
+    }
+
+    sendBtn.addEventListener('click', () => sendMessage(messageInput.value));
+    messageInput.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter') sendMessage(messageInput.value);
+    });
+
+    addMessage("{{ config.presets.greeting }}", 'bot');
+    loadQuickReplies();
+  </script>
+</body>
+</html>

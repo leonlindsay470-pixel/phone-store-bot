@@ -1,0 +1,44 @@
+{
+  "business": {
+    "name": "Elite Mobile JA",
+    "tagline": "Instant replies for prices, availability, delivery, and trade-ins.",
+    "hours": "Monday to Saturday, 9:00 AM to 6:00 PM",
+    "location": "Mandeville, Manchester, Jamaica",
+    "phone": "+1 (876) 555-0123",
+    "email": "sales@elitemobileja.com",
+    "website": "https://example.com",
+    "about": "Phones, accessories, trade-ins, and fast customer support."
+  },
+  "offers": [
+    "iPhones and Samsung devices",
+    "Cases, chargers, and screen protectors",
+    "Trade-ins on selected devices",
+    "Local delivery and pickup"
+  ],
+  "quick_replies": [
+    "Do you have iPhone 13 Pro?",
+    "What are your prices?",
+    "Do you deliver?",
+    "Do you take trade-ins?"
+  ],
+  "presets": {
+    "greeting": "Hey! Welcome to Elite Mobile JA. Ask about phone prices, stock, delivery, trade-ins, accessories, or human support.",
+    "hours": "We're open Monday to Saturday, 9:00 AM to 6:00 PM.",
+    "location": "We're located in Mandeville, Manchester, Jamaica.",
+    "delivery": "Yes, we offer local delivery and pickup. Send your location and the phone or accessory you want.",
+    "prices": "Prices vary by model, storage, condition, and color. Tell me the exact phone you want and I'll guide you.",
+    "tradein": "Yes, we accept trade-ins on selected devices. Send your current phone model, storage, and condition.",
+    "accessories": "Yes, we carry cases, chargers, screen protectors, AirPods-style earbuds, and more.",
+    "human": "No problem — leave your name, phone number, and what you're interested in, and a team member can follow up.",
+    "fallback": "I can help with stock, prices, delivery, trade-ins, accessories, store hours, or getting a human to follow up."
+  },
+  "inventory_keywords": {
+    "iphone 13 pro": "We often stock iPhone 13 Pro in different storage sizes. Tell me if you want 128GB, 256GB, or 512GB, and whether you want new or used.",
+    "iphone 14 pro": "We can check iPhone 14 Pro stock for you. Tell me the storage and preferred color.",
+    "iphone": "We carry iPhones in different models and conditions. Tell me the exact model and storage you want.",
+    "samsung": "We carry selected Samsung devices. Tell me the exact model you're looking for.",
+    "airpods": "Yes, we carry earbuds and accessories. Tell me whether you want original or budget-friendly options.",
+    "charger": "Yes, we stock chargers and charging cables for different devices.",
+    "case": "Yes, we have cases for many models. Tell me your phone model and preferred style."
+  }
+}

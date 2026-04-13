@@ -1,0 +1,88 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>{{ config.business.name }} Dashboard</title>
+  <style>
+    body { margin: 0; font-family: Arial, sans-serif; background: #f8fafc; color: #0f172a; }
+    .wrap { max-width: 1220px; margin: 0 auto; padding: 24px 16px 40px; }
+    .card { background: white; border-radius: 22px; padding: 22px; box-shadow: 0 16px 40px rgba(15,23,42,0.08); margin-bottom: 18px; }
+    table { width: 100%; border-collapse: collapse; }
+    th, td { padding: 12px 10px; border-bottom: 1px solid #e2e8f0; text-align: left; vertical-align: top; }
+    th { background: #f8fafc; }
+    code { background: #f1f5f9; padding: 2px 6px; border-radius: 8px; }
+    a.btn { text-decoration: none; color: #0f172a; background: #e2e8f0; padding: 10px 14px; border-radius: 12px; font-weight: 700; margin-right: 10px; }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <div class="card">
+      <h1>{{ config.business.name }} Dashboard</h1>
+      <p>All channels feed into one dashboard: website, WhatsApp, and Instagram.</p>
+      <a class="btn" href="/">Back to chat</a>
+      <a class="btn" href="/settings">Edit presets</a>
+    </div>
+
+    <div class="card">
+      <h2>Leads</h2>
+      <table>
+        <thead>
+          <tr>
+            <th>Session</th>
+            <th>Channel</th>
+            <th>Name</th>
+            <th>Phone</th>
+            <th>Intent</th>
+            <th>Notes</th>
+            <th>Created</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for lead in leads %}
+          <tr>
+            <td><code>{{ lead.session_id }}</code></td>
+            <td>{{ lead.channel }}</td>
+            <td>{{ lead.name or '-' }}</td>
+            <td>{{ lead.phone or '-' }}</td>
+            <td>{{ lead.intent or '-' }}</td>
+            <td>{{ lead.notes or '-' }}</td>
+            <td>{{ lead.created_at }}</td>
+          </tr>
+          {% else %}
+          <tr><td colspan="7">No leads yet.</td></tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+
+    <div class="card">
+      <h2>Recent messages</h2>
+      <table>
+        <thead>
+          <tr>
+            <th>Session</th>
+            <th>Channel</th>
+            <th>Sender</th>
+            <th>Message</th>
+            <th>Created</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for msg in messages %}
+          <tr>
+            <td><code>{{ msg.session_id }}</code></td>
+            <td>{{ msg.channel }}</td>
+            <td>{{ msg.sender }}</td>
+            <td>{{ msg.message }}</td>
+            <td>{{ msg.created_at }}</td>
+          </tr>
+          {% else %}
+          <tr><td colspan="5">No messages yet.</td></tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+</body>
+</html>

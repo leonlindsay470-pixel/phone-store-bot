@@ -1,0 +1,62 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Customize {{ config.business.name }}</title>
+  <style>
+    body { margin: 0; font-family: Arial, sans-serif; background: #f8fafc; color: #0f172a; }
+    .wrap { max-width: 980px; margin: 0 auto; padding: 24px 16px 40px; }
+    .card { background: white; border-radius: 22px; padding: 22px; box-shadow: 0 16px 40px rgba(15,23,42,0.08); }
+    .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+    label { display: block; font-weight: 700; margin-bottom: 6px; }
+    input, textarea { width: 100%; border: 1px solid #cbd5e1; border-radius: 12px; padding: 12px 14px; font: inherit; }
+    textarea { min-height: 110px; resize: vertical; }
+    .full { grid-column: 1 / -1; }
+    button { margin-top: 16px; border: none; background: #111827; color: white; padding: 12px 18px; border-radius: 12px; cursor: pointer; font-weight: 700; }
+    a.btn { text-decoration: none; color: #0f172a; background: #e2e8f0; padding: 10px 14px; border-radius: 12px; font-weight: 700; margin-right: 10px; }
+    @media (max-width: 800px) { .grid { grid-template-columns: 1fr; } }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <div class="card">
+      <h1>Customize presets and quick replies</h1>
+      <p>This is where you make the WhatsApp and Instagram text feel like the store. Quick replies and preset texts are fully editable.</p>
+      <p>
+        <a class="btn" href="/">Back to chat</a>
+        <a class="btn" href="/dashboard">Dashboard</a>
+      </p>
+
+      <form method="post">
+        <div class="grid">
+          <div><label>Business name</label><input name="name" value="{{ config.business.name }}"></div>
+          <div><label>Tagline</label><input name="tagline" value="{{ config.business.tagline }}"></div>
+          <div><label>Hours</label><input name="hours" value="{{ config.business.hours }}"></div>
+          <div><label>Location</label><input name="location" value="{{ config.business.location }}"></div>
+          <div><label>Phone</label><input name="phone" value="{{ config.business.phone }}"></div>
+          <div><label>Email</label><input name="email" value="{{ config.business.email }}"></div>
+          <div class="full"><label>Website</label><input name="website" value="{{ config.business.website }}"></div>
+          <div class="full"><label>About</label><textarea name="about">{{ config.business.about }}</textarea></div>
+
+          <div class="full"><label>Offers (one per line)</label><textarea name="offers">{{ config.offers | join('\n') }}</textarea></div>
+          <div class="full"><label>Quick replies for website / sales demos / reusable prompts (one per line)</label><textarea name="quick_replies">{{ config.quick_replies | join('\n') }}</textarea></div>
+
+          {% for key, value in config.presets.items() %}
+          <div class="full">
+            <label>Preset: {{ key }}</label>
+            <textarea name="preset_{{ key }}">{{ value }}</textarea>
+          </div>
+          {% endfor %}
+
+          <div class="full">
+            <label>Inventory keyword rules (one per line, format: keyword = reply)</label>
+            <textarea name="inventory_keywords">{{ inventory_lines }}</textarea>
+          </div>
+        </div>
+        <button type="submit">Save changes</button>
+      </form>
+    </div>
+  </div>
+</body>
+</html>
