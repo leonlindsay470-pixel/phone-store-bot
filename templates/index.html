@@ -3,152 +3,553 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>{{ config.business.name }} Omni Chat</title>
+  <title>{{ config.business.name if config and config.business else "Phone Store Bot" }}</title>
   <style>
-    :root {
-      --bg: #0f172a;
-      --panel: #111827;
-      --card: #ffffff;
-      --muted: #64748b;
-      --line: #e5e7eb;
-      --accent: #111827;
-      --bubble: #f1f5f9;
-      --bubble-user: #dcfce7;
+    * {
+      box-sizing: border-box;
     }
-    * { box-sizing: border-box; }
-    body { margin: 0; font-family: Arial, sans-serif; background: #eef2ff; color: #0f172a; }
-    .wrap { max-width: 1160px; margin: 0 auto; padding: 24px 16px 40px; display: grid; grid-template-columns: 360px 1fr; gap: 24px; }
-    .card { background: var(--card); border-radius: 24px; box-shadow: 0 20px 50px rgba(15, 23, 42, 0.08); }
-    .side { padding: 24px; }
-    .pill { display: inline-block; background: #e0e7ff; color: #3730a3; border-radius: 999px; padding: 8px 12px; font-size: 12px; font-weight: 700; }
-    h1 { margin: 14px 0 8px; font-size: 30px; }
-    .muted { color: var(--muted); line-height: 1.6; }
-    .info { margin-top: 20px; display: grid; gap: 12px; }
-    .info div { padding: 12px 14px; background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 16px; }
-    ul { padding-left: 18px; }
-    .chat-shell { overflow: hidden; display: grid; grid-template-rows: auto 1fr auto auto; min-height: 720px; }
-    .chat-top { background: linear-gradient(135deg, #111827, #1f2937); color: white; padding: 22px 24px; }
-    .chat-top h2 { margin: 0; }
-    .chat-top p { margin: 8px 0 0; color: #cbd5e1; }
-    .channel-row { margin-top: 14px; display: flex; gap: 10px; flex-wrap: wrap; }
-    .channel-chip { background: rgba(255,255,255,0.12); border-radius: 999px; padding: 8px 12px; font-size: 13px; }
-    .chat-window { padding: 20px; background: #f8fafc; overflow-y: auto; min-height: 420px; }
-    .msg { max-width: 78%; padding: 12px 14px; border-radius: 18px; line-height: 1.45; margin: 12px 0; white-space: pre-wrap; }
-    .msg.bot { background: var(--bubble); border-bottom-left-radius: 6px; }
-    .msg.user { background: var(--bubble-user); margin-left: auto; border-bottom-right-radius: 6px; }
-    .quick-wrap { padding: 16px 20px 0; display: flex; flex-wrap: wrap; gap: 10px; }
-    .quick-btn, #sendBtn {
-      border: none; cursor: pointer; border-radius: 999px; padding: 11px 14px; font-weight: 600;
+
+    body {
+      margin: 0;
+      font-family: Arial, Helvetica, sans-serif;
+      background: linear-gradient(180deg, #f4f7fb 0%, #eef2f7 100%);
+      color: #172033;
     }
-    .quick-btn { background: #e2e8f0; }
-    .composer { padding: 16px 20px 20px; display: flex; gap: 10px; }
-    .composer input { flex: 1; border-radius: 999px; border: 1px solid #cbd5e1; padding: 14px 16px; font-size: 16px; }
-    #sendBtn { background: #111827; color: white; min-width: 96px; }
-    .links { margin-top: 18px; display: flex; gap: 12px; flex-wrap: wrap; }
-    a.btn { text-decoration: none; color: #111827; background: #e2e8f0; padding: 10px 14px; border-radius: 12px; font-weight: 700; }
-    @media (max-width: 900px) {
-      .wrap { grid-template-columns: 1fr; }
-      .chat-shell { min-height: 640px; }
+
+    .page {
+      max-width: 1280px;
+      margin: 0 auto;
+      padding: 28px 18px 40px;
+    }
+
+    .topbar {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 16px;
+      margin-bottom: 22px;
+    }
+
+    .brand {
+      display: flex;
+      align-items: center;
+      gap: 14px;
+    }
+
+    .brand-logo {
+      width: 52px;
+      height: 52px;
+      border-radius: 16px;
+      background: linear-gradient(135deg, #0f172a, #2563eb);
+      color: #fff;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-weight: 700;
+      font-size: 20px;
+      box-shadow: 0 10px 24px rgba(37, 99, 235, 0.25);
+    }
+
+    .brand-text h1 {
+      margin: 0;
+      font-size: 24px;
+      line-height: 1.1;
+    }
+
+    .brand-text p {
+      margin: 4px 0 0;
+      color: #5b6475;
+      font-size: 14px;
+    }
+
+    .status-pill {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      background: #ffffff;
+      border: 1px solid #dbe3ef;
+      border-radius: 999px;
+      padding: 10px 14px;
+      font-size: 13px;
+      color: #334155;
+      box-shadow: 0 8px 18px rgba(15, 23, 42, 0.05);
+    }
+
+    .dot {
+      width: 10px;
+      height: 10px;
+      border-radius: 50%;
+      background: #22c55e;
+      box-shadow: 0 0 0 4px rgba(34, 197, 94, 0.15);
+    }
+
+    .hero {
+      display: grid;
+      grid-template-columns: 360px 1fr;
+      gap: 24px;
+      align-items: start;
+    }
+
+    .card {
+      background: #fff;
+      border: 1px solid #e4e9f2;
+      border-radius: 24px;
+      box-shadow: 0 16px 40px rgba(15, 23, 42, 0.08);
+    }
+
+    .sidebar {
+      padding: 24px;
+      position: sticky;
+      top: 20px;
+    }
+
+    .badge {
+      display: inline-block;
+      padding: 8px 14px;
+      border-radius: 999px;
+      background: #dbeafe;
+      color: #1d4ed8;
+      font-size: 13px;
+      font-weight: 700;
+      margin-bottom: 18px;
+    }
+
+    .sidebar h2 {
+      margin: 0 0 10px;
+      font-size: 22px;
+      line-height: 1.15;
+    }
+
+    .tagline {
+      margin: 0 0 14px;
+      color: #4b5563;
+      font-size: 16px;
+      line-height: 1.55;
+    }
+
+    .about {
+      margin: 0 0 18px;
+      color: #5f6b7c;
+      font-size: 15px;
+      line-height: 1.6;
+    }
+
+    .info-box {
+      background: #f8fafc;
+      border: 1px solid #e5eaf1;
+      border-radius: 16px;
+      padding: 14px 16px;
+      margin-bottom: 12px;
+    }
+
+    .info-box strong {
+      display: block;
+      margin-bottom: 5px;
+      color: #111827;
+    }
+
+    .section-title {
+      margin: 24px 0 12px;
+      font-size: 16px;
+      font-weight: 700;
+    }
+
+    .offer-list {
+      margin: 0;
+      padding-left: 20px;
+      color: #374151;
+    }
+
+    .offer-list li {
+      margin-bottom: 8px;
+      line-height: 1.45;
+    }
+
+    .main-panel {
+      overflow: hidden;
+    }
+
+    .chat-header {
+      padding: 24px 26px;
+      background: linear-gradient(135deg, #0f172a 0%, #111827 45%, #1d4ed8 100%);
+      color: #fff;
+    }
+
+    .chat-header h3 {
+      margin: 0;
+      font-size: 18px;
+    }
+
+    .chat-header p {
+      margin: 8px 0 16px;
+      color: rgba(255, 255, 255, 0.82);
+      line-height: 1.5;
+    }
+
+    .channel-row {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+    }
+
+    .channel-pill {
+      font-size: 13px;
+      padding: 8px 12px;
+      border-radius: 999px;
+      background: rgba(255, 255, 255, 0.11);
+      border: 1px solid rgba(255, 255, 255, 0.12);
+      color: #fff;
+    }
+
+    .chat-body {
+      background: #f8fbff;
+      padding: 22px;
+      min-height: 480px;
+      border-top: 1px solid #e7edf5;
+      border-bottom: 1px solid #e7edf5;
+    }
+
+    .messages {
+      display: flex;
+      flex-direction: column;
+      gap: 14px;
+    }
+
+    .bubble {
+      max-width: 78%;
+      padding: 14px 16px;
+      border-radius: 18px;
+      line-height: 1.5;
+      font-size: 15px;
+      white-space: pre-wrap;
+      word-wrap: break-word;
+      box-shadow: 0 8px 22px rgba(15, 23, 42, 0.06);
+    }
+
+    .bubble.bot {
+      background: #ffffff;
+      color: #1f2937;
+      border-top-left-radius: 6px;
+      align-self: flex-start;
+    }
+
+    .bubble.user {
+      background: #1d4ed8;
+      color: #fff;
+      border-top-right-radius: 6px;
+      align-self: flex-end;
+    }
+
+    .chat-footer {
+      background: #fff;
+      padding: 18px 20px 20px;
+    }
+
+    .input-row {
+      display: flex;
+      gap: 12px;
+      margin-bottom: 14px;
+    }
+
+    .input-row input {
+      flex: 1;
+      border: 1px solid #d7deea;
+      background: #f8fafc;
+      border-radius: 14px;
+      padding: 14px 16px;
+      font-size: 15px;
+      outline: none;
+    }
+
+    .input-row input:focus {
+      border-color: #2563eb;
+      box-shadow: 0 0 0 4px rgba(37, 99, 235, 0.12);
+      background: #fff;
+    }
+
+    .input-row button {
+      border: none;
+      border-radius: 14px;
+      background: #0f172a;
+      color: #fff;
+      padding: 0 20px;
+      font-size: 15px;
+      font-weight: 700;
+      cursor: pointer;
+      min-height: 50px;
+    }
+
+    .input-row button:hover {
+      opacity: 0.95;
+    }
+
+    .quick-label {
+      font-size: 13px;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      color: #64748b;
+      margin-bottom: 10px;
+      font-weight: 700;
+    }
+
+    .quick-replies {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+    }
+
+    .quick-replies button {
+      border: 1px solid #dbe2ee;
+      background: #ffffff;
+      color: #111827;
+      padding: 11px 16px;
+      border-radius: 999px;
+      font-size: 14px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: 0.15s ease;
+    }
+
+    .quick-replies button:hover {
+      background: #0f172a;
+      color: #fff;
+      border-color: #0f172a;
+      transform: translateY(-1px);
+    }
+
+    .footer-note {
+      margin-top: 16px;
+      font-size: 12px;
+      color: #718096;
+    }
+
+    @media (max-width: 1024px) {
+      .hero {
+        grid-template-columns: 1fr;
+      }
+
+      .sidebar {
+        position: static;
+      }
+    }
+
+    @media (max-width: 640px) {
+      .page {
+        padding: 18px 12px 24px;
+      }
+
+      .topbar {
+        flex-direction: column;
+        align-items: flex-start;
+      }
+
+      .chat-header,
+      .chat-body,
+      .chat-footer,
+      .sidebar {
+        padding-left: 16px;
+        padding-right: 16px;
+      }
+
+      .input-row {
+        flex-direction: column;
+      }
+
+      .input-row button {
+        width: 100%;
+        padding: 14px 16px;
+      }
+
+      .bubble {
+        max-width: 92%;
+      }
     }
   </style>
 </head>
 <body>
-  <div class="wrap">
-    <section class="card side">
-      <span class="pill">Phone Store Omnichannel Bot</span>
-      <h1>{{ config.business.name }}</h1>
-      <p class="muted">{{ config.business.tagline }}</p>
-      <p class="muted">{{ config.business.about }}</p>
-
-      <div class="info">
-        <div><strong>Hours:</strong> {{ config.business.hours }}</div>
-        <div><strong>Location:</strong> {{ config.business.location }}</div>
-        <div><strong>Phone:</strong> {{ config.business.phone }}</div>
-        <div><strong>Email:</strong> {{ config.business.email }}</div>
-      </div>
-
-      <h3>What it handles</h3>
-      <ul>
-        {% for offer in config.offers %}
-          <li>{{ offer }}</li>
-        {% endfor %}
-      </ul>
-
-      <div class="links">
-        <a class="btn" href="/dashboard">Dashboard</a>
-        <a class="btn" href="/settings">Customize presets</a>
-      </div>
-    </section>
-
-    <section class="card chat-shell">
-      <div class="chat-top">
-        <h2>Website demo</h2>
-        <p>Same reply engine can power website chat, WhatsApp, and Instagram DM.</p>
-        <div class="channel-row">
-          <span class="channel-chip">Web</span>
-          <span class="channel-chip">WhatsApp webhook ready</span>
-          <span class="channel-chip">Instagram webhook ready</span>
+  <div class="page">
+    <div class="topbar">
+      <div class="brand">
+        <div class="brand-logo">
+          {{ (config.business.name[:1] if config and config.business and config.business.name else "P") }}
+        </div>
+        <div class="brand-text">
+          <h1>{{ config.business.name if config and config.business else "Phone Store Bot" }}</h1>
+          <p>Automated replies for web, WhatsApp, and Instagram.</p>
         </div>
       </div>
 
-      <div id="chatWindow" class="chat-window"></div>
-
-      <div class="quick-wrap" id="quickWrap"></div>
-
-      <div class="composer">
-        <input id="messageInput" type="text" placeholder="Ask about a phone, price, delivery, or trade-in..." />
-        <button id="sendBtn">Send</button>
+      <div class="status-pill">
+        <span class="dot"></span>
+        Web, WhatsApp, and Instagram webhook ready
       </div>
-    </section>
+    </div>
+
+    <div class="hero">
+      <aside class="card sidebar">
+        <div class="badge">Phone Store Omnichannel Bot</div>
+
+        <h2>{{ config.business.name if config and config.business else "Elite Mobile JA" }}</h2>
+
+        <p class="tagline">
+          {{ config.business.tagline if config and config.business and config.business.tagline else "Instant replies for prices, availability, delivery, and trade-ins." }}
+        </p>
+
+        <p class="about">
+          {{ config.business.about if config and config.business and config.business.about else "Phones, accessories, trade-ins, and fast customer support." }}
+        </p>
+
+        <div class="info-box">
+          <strong>Hours</strong>
+          {{ config.business.hours if config and config.business and config.business.hours else "Monday to Saturday, 9:00 AM to 6:00 PM" }}
+        </div>
+
+        <div class="info-box">
+          <strong>Location</strong>
+          {{ config.business.location if config and config.business and config.business.location else "Mandeville, Manchester, Jamaica" }}
+        </div>
+
+        <div class="info-box">
+          <strong>Phone</strong>
+          {{ config.business.phone if config and config.business and config.business.phone else "+1 (876) 555-0123" }}
+        </div>
+
+        <div class="info-box">
+          <strong>Email</strong>
+          {{ config.business.email if config and config.business and config.business.email else "sales@elitemobileja.com" }}
+        </div>
+
+        <div class="section-title">What it handles</div>
+        <ul class="offer-list">
+          {% if config and config.offers %}
+            {% for offer in config.offers %}
+              <li>{{ offer }}</li>
+            {% endfor %}
+          {% else %}
+            <li>iPhones and Samsung devices</li>
+            <li>Cases, chargers, and screen protectors</li>
+            <li>Trade-ins on selected devices</li>
+            <li>Pickup and islandwide delivery options</li>
+          {% endif %}
+        </ul>
+      </aside>
+
+      <section class="card main-panel">
+        <div class="chat-header">
+          <h3>Website demo</h3>
+          <p>Same reply engine can power website chat, WhatsApp, and Instagram DM.</p>
+
+          <div class="channel-row">
+            <span class="channel-pill">Web</span>
+            <span class="channel-pill">WhatsApp webhook ready</span>
+            <span class="channel-pill">Instagram webhook ready</span>
+          </div>
+        </div>
+
+        <div class="chat-body">
+          <div class="messages" id="messages">
+            <div class="bubble bot" id="welcome-message">
+              Hey! Welcome to {{ config.business.name if config and config.business else "Elite Mobile JA" }}.
+              Ask about phone prices, stock, delivery, trade-ins, accessories, or human support.
+            </div>
+          </div>
+        </div>
+
+        <div class="chat-footer">
+          <div class="input-row">
+            <input
+              type="text"
+              id="chatInput"
+              placeholder="Ask about prices, availability, delivery, or trade-ins..."
+            />
+            <button id="sendBtn" type="button">Send</button>
+          </div>
+
+          <div class="quick-label">Quick prompts</div>
+          <div class="quick-replies">
+            {% if config and config.quick_replies %}
+              {% for reply in config.quick_replies %}
+                <button type="button" onclick="sendQuickReply('{{ reply|escape }}')">{{ reply }}</button>
+              {% endfor %}
+            {% else %}
+              <button type="button" onclick="sendQuickReply('Do you have iPhone 13 Pro?')">Do you have iPhone 13 Pro?</button>
+              <button type="button" onclick="sendQuickReply('What are your prices?')">What are your prices?</button>
+              <button type="button" onclick="sendQuickReply('Do you deliver?')">Do you deliver?</button>
+              <button type="button" onclick="sendQuickReply('Do you take trade-ins?')">Do you take trade-ins?</button>
+            {% endif %}
+          </div>
+
+          <div class="footer-note">
+            Messages here are processed by the same backend used for your web demo and social messaging flows.
+          </div>
+        </div>
+      </section>
+    </div>
   </div>
 
   <script>
-    const chatWindow = document.getElementById('chatWindow');
-    const messageInput = document.getElementById('messageInput');
-    const sendBtn = document.getElementById('sendBtn');
-    const quickWrap = document.getElementById('quickWrap');
+    const messagesEl = document.getElementById("messages");
+    const inputEl = document.getElementById("chatInput");
+    const sendBtn = document.getElementById("sendBtn");
 
     function addMessage(text, sender) {
-      const div = document.createElement('div');
-      div.className = `msg ${sender}`;
+      const div = document.createElement("div");
+      div.className = `bubble ${sender}`;
       div.textContent = text;
-      chatWindow.appendChild(div);
-      chatWindow.scrollTop = chatWindow.scrollHeight;
-    }
-
-    async function loadQuickReplies() {
-      const res = await fetch('/api/presets');
-      const data = await res.json();
-      quickWrap.innerHTML = '';
-      (data.quick_replies || []).forEach(text => {
-        const btn = document.createElement('button');
-        btn.className = 'quick-btn';
-        btn.textContent = text;
-        btn.addEventListener('click', () => sendMessage(text));
-        quickWrap.appendChild(btn);
-      });
+      messagesEl.appendChild(div);
+      div.scrollIntoView({ behavior: "smooth", block: "end" });
     }
 
     async function sendMessage(text) {
-      if (!text.trim()) return;
-      addMessage(text, 'user');
-      messageInput.value = '';
-      const res = await fetch('/api/chat', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ message: text })
-      });
-      const data = await res.json();
-      addMessage(data.reply || 'Something went wrong.', 'bot');
+      const trimmed = (text || "").trim();
+      if (!trimmed) return;
+
+      addMessage(trimmed, "user");
+      inputEl.value = "";
+      sendBtn.disabled = true;
+      sendBtn.textContent = "Sending...";
+
+      try {
+        const response = await fetch("/api/chat", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json"
+          },
+          body: JSON.stringify({
+            message: trimmed,
+            channel: "web"
+          })
+        });
+
+        const data = await response.json();
+        const reply =
+          data.reply ||
+          data.response ||
+          "Got it. A team member will follow up shortly.";
+
+        addMessage(reply, "bot");
+      } catch (error) {
+        addMessage("Something went wrong sending your message. Please try again.", "bot");
+      } finally {
+        sendBtn.disabled = false;
+        sendBtn.textContent = "Send";
+        inputEl.focus();
+      }
     }
 
-    sendBtn.addEventListener('click', () => sendMessage(messageInput.value));
-    messageInput.addEventListener('keydown', (e) => {
-      if (e.key === 'Enter') sendMessage(messageInput.value);
+    function sendQuickReply(text) {
+      sendMessage(text);
+    }
+
+    sendBtn.addEventListener("click", () => {
+      sendMessage(inputEl.value);
     });
 
-    addMessage("{{ config.presets.greeting }}", 'bot');
-    loadQuickReplies();
+    inputEl.addEventListener("keydown", (event) => {
+      if (event.key === "Enter") {
+        sendMessage(inputEl.value);
+      }
+    });
   </script>
 </body>
 </html>
