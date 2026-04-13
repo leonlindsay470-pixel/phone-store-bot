@@ -455,6 +455,18 @@
             <li>Pickup and islandwide delivery options</li>
           {% endif %}
         </ul>
+
+        <div class="section-title">Admin</div>
+        <div style="display:flex; flex-direction:column; gap:10px; margin-top:10px;">
+          {% if current_user %}
+          <a href="/dashboard" style="text-decoration:none; background:#0f172a; color:white; padding:12px 14px; border-radius:12px; font-weight:600; text-align:center;">Dashboard</a>
+          <a href="/settings" style="text-decoration:none; background:#2563eb; color:white; padding:12px 14px; border-radius:12px; font-weight:600; text-align:center;">Customize Presets</a>
+          <a href="/logout" style="text-decoration:none; background:#e2e8f0; color:#0f172a; padding:12px 14px; border-radius:12px; font-weight:600; text-align:center;">Log out</a>
+          {% else %}
+          <a href="/login" style="text-decoration:none; background:#0f172a; color:white; padding:12px 14px; border-radius:12px; font-weight:600; text-align:center;">Log in</a>
+          <a href="/signup" style="text-decoration:none; background:#2563eb; color:white; padding:12px 14px; border-radius:12px; font-weight:600; text-align:center;">Sign up</a>
+          {% endif %}
+        </div>
       </aside>
 
       <section class="card main-panel">
