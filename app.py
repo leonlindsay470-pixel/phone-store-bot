@@ -4,12 +4,14 @@ import re
 import sqlite3
 import uuid
 from datetime import datetime
+from functools import wraps
 from pathlib import Path
 from typing import Any
 
 import requests
 from dotenv import load_dotenv
-from flask import Flask, jsonify, redirect, render_template, request, session, url_for
+from flask import Flask, flash, g, jsonify, redirect, render_template, request, session, url_for
+from werkzeug.security import check_password_hash, generate_password_hash
 
 load_dotenv()
 
@@ -73,6 +75,17 @@ def init_db() -> None:
         )
         """
     )
+    cur.execute(
+        """
+        CREATE TABLE IF NOT EXISTS users (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            name TEXT NOT NULL,
+            email TEXT NOT NULL UNIQUE,
+            password_hash TEXT NOT NULL,
+            created_at TEXT NOT NULL
+        )
+        """
+    )
     conn.commit()
     conn.close()
 
@@ -80,7 +93,38 @@ def init_db() -> None:
 init_db()
 
 
-# ---------- Helpers ----------
+# ---------- Auth helpers ----------
+def get_user_by_id(user_id: int) -> sqlite3.Row | None:
+    conn = get_conn()
+    user = conn.execute("SELECT * FROM users WHERE id = ?", (user_id,)).fetchone()
+    conn.close()
+    return user
+
+
+@app.before_request
+def load_logged_in_user() -> None:
+    user_id = session.get("user_id")
+    g.user = get_user_by_id(user_id) if user_id else None
+
+
+@app.context_processor
+def inject_auth_state() -> dict[str, Any]:
+    return {"current_user": getattr(g, "user", None)}
+
+
+
+def login_required(view):
+    @wraps(view)
+    def wrapped_view(*args, **kwargs):
+        if g.user is None:
+            flash("Please log in to continue.")
+            return redirect(url_for("login", next=request.path))
+        return view(*args, **kwargs)
+
+    return wrapped_view
+
+
+# ---------- Generic helpers ----------
 def now_str() -> str:
     return datetime.now().strftime("%Y-%m-%d %H:%M:%S")
 
@@ -185,6 +229,29 @@ def send_whatsapp_text(to_number: str, body: str) -> None:
         print("WhatsApp send failed:", exc)
 
 
+def send_instagram_text(recipient_id: str, body: str) -> None:
+    if not META_ACCESS_TOKEN:
+        print("Instagram send skipped: missing META_ACCESS_TOKEN", flush=True)
+        return
+
+    url = f"https://graph.facebook.com/{GRAPH_API_VERSION}/me/messages"
+    headers = {
+        "Authorization": f"Bearer {META_ACCESS_TOKEN}",
+        "Content-Type": "application/json",
+    }
+    payload = {
+        "recipient": {"id": recipient_id},
+        "message": {"text": body},
+        "messaging_type": "RESPONSE",
+    }
+
+    try:
+        resp = requests.post(url, headers=headers, json=payload, timeout=20)
+        print("Instagram send:", resp.status_code, resp.text, flush=True)
+    except Exception as exc:
+        print("Instagram send failed:", exc, flush=True)
+
+
 # ---------- Reply Engine ----------
 def build_reply(message: str, channel: str = "web") -> tuple[str, str]:
     config = load_config()
@@ -226,7 +293,10 @@ def build_reply(message: str, channel: str = "web") -> tuple[str, str]:
     if any(word in lowered for word in ["iphone", "samsung", "phone"]):
         return presets.get("prices", "Tell me the exact model, storage, and condition you want."), "product_inquiry"
 
-    return presets.get("fallback", "I can help with stock, prices, delivery, trade-ins, accessories, store hours, or a human follow-up."), intent
+    return presets.get(
+        "fallback",
+        "I can help with stock, prices, delivery, trade-ins, accessories, store hours, or a human follow-up.",
+    ), intent
 
 
 # ---------- Routes ----------
@@ -237,14 +307,94 @@ def index() -> str:
     return render_template("index.html", config=config)
 
 
+@app.route("/signup", methods=["GET", "POST"])
+def signup() -> str:
+    if g.user is not None:
+        return redirect(url_for("dashboard"))
+
+    error = None
+    if request.method == "POST":
+        name = (request.form.get("name") or "").strip()
+        email = (request.form.get("email") or "").strip().lower()
+        password = request.form.get("password") or ""
+        confirm_password = request.form.get("confirm_password") or ""
+
+        if not name:
+            error = "Name is required."
+        elif not email:
+            error = "Email is required."
+        elif len(password) < 6:
+            error = "Password must be at least 6 characters."
+        elif password != confirm_password:
+            error = "Passwords do not match."
+        else:
+            conn = get_conn()
+            existing = conn.execute("SELECT id FROM users WHERE email = ?", (email,)).fetchone()
+            if existing:
+                error = "That email is already registered."
+            else:
+                conn.execute(
+                    "INSERT INTO users (name, email, password_hash, created_at) VALUES (?, ?, ?, ?)",
+                    (name, email, generate_password_hash(password), now_str()),
+                )
+                conn.commit()
+                user = conn.execute("SELECT * FROM users WHERE email = ?", (email,)).fetchone()
+                conn.close()
+                session.clear()
+                session["user_id"] = user["id"]
+                ensure_session_id()
+                flash("Account created successfully.")
+                return redirect(url_for("dashboard"))
+            conn.close()
+
+        if error:
+            flash(error)
+
+    return render_template("signup.html")
+
+
+@app.route("/login", methods=["GET", "POST"])
+def login() -> str:
+    if g.user is not None:
+        return redirect(url_for("dashboard"))
+
+    if request.method == "POST":
+        email = (request.form.get("email") or "").strip().lower()
+        password = request.form.get("password") or ""
+
+        conn = get_conn()
+        user = conn.execute("SELECT * FROM users WHERE email = ?", (email,)).fetchone()
+        conn.close()
+
+        if user is None or not check_password_hash(user["password_hash"], password):
+            flash("Invalid email or password.")
+        else:
+            session.clear()
+            session["user_id"] = user["id"]
+            ensure_session_id()
+            flash("Logged in successfully.")
+            return redirect(request.args.get("next") or url_for("dashboard"))
+
+    return render_template("login.html")
+
+
+@app.route("/logout")
+def logout() -> str:
+    session.clear()
+    flash("You have been logged out.")
+    return redirect(url_for("login"))
+
+
 @app.route("/api/presets")
 def api_presets():
     config = load_config()
-    return jsonify({
-        "quick_replies": config.get("quick_replies", []),
-        "presets": config.get("presets", {}),
-        "business": config.get("business", {}),
-    })
+    return jsonify(
+        {
+            "quick_replies": config.get("quick_replies", []),
+            "presets": config.get("presets", {}),
+            "business": config.get("business", {}),
+        }
+    )
 
 
 @app.route("/api/chat", methods=["POST"])
@@ -268,6 +418,7 @@ def api_chat():
 
 
 @app.route("/dashboard")
+@login_required
 def dashboard() -> str:
     config = load_config()
     conn = get_conn()
@@ -278,6 +429,7 @@ def dashboard() -> str:
 
 
 @app.route("/settings", methods=["GET", "POST"])
+@login_required
 def settings() -> str:
     config = load_config()
 
@@ -305,11 +457,10 @@ def settings() -> str:
         }
 
         save_config(config)
+        flash("Settings saved.")
         return redirect(url_for("settings"))
 
-    inventory_lines = "\n".join(
-        f"{k} = {v}" for k, v in config.get("inventory_keywords", {}).items()
-    )
+    inventory_lines = "\n".join(f"{k} = {v}" for k, v in config.get("inventory_keywords", {}).items())
     return render_template("settings.html", config=config, inventory_lines=inventory_lines)
 
 
@@ -327,15 +478,14 @@ def verify_meta_webhook():
 @app.route("/webhooks/meta", methods=["POST"])
 def handle_meta_webhook():
     payload = request.get_json(silent=True) or {}
-    print("META WEBHOOK:", json.dumps(payload, indent=2))
+    print("META WEBHOOK:", json.dumps(payload, indent=2), flush=True)
 
     entries = payload.get("entry", [])
     for entry in entries:
-        changes = entry.get("changes", [])
-        for change in changes:
+        # WhatsApp events usually come through entry -> changes -> value -> messages
+        for change in entry.get("changes", []):
             value = change.get("value", {})
 
-            # WhatsApp messages
             for message in value.get("messages", []):
                 from_number = message.get("from", "unknown")
                 text = message.get("text", {}).get("body", "")
@@ -351,31 +501,35 @@ def handle_meta_webhook():
                 save_lead(session_id, "whatsapp", intent=intent, notes=text[:500])
                 send_whatsapp_text(from_number, reply)
 
-            # Instagram messages placeholder logging
-            messaging = value.get("messaging", [])
-            for event in messaging:
-                sender_id = (event.get("sender") or {}).get("id", "unknown")
-                message_obj = event.get("message") or {}
-                text = message_obj.get("text", "")
-                if not text:
-                    continue
+        # Instagram / Messenger events usually come through entry -> messaging
+        for event in entry.get("messaging", []):
+            sender_id = (event.get("sender") or {}).get("id", "unknown")
+            message_obj = event.get("message") or {}
+            text = message_obj.get("text", "")
+            if not text:
+                continue
 
-                session_id = f"ig-{sender_id}"
-                log_message(session_id, "instagram", "user", text)
-                maybe_capture_contact(session_id, "instagram", text)
+            session_id = f"ig-{sender_id}"
+            log_message(session_id, "instagram", "user", text)
+            maybe_capture_contact(session_id, "instagram", text)
 
-                reply, intent = build_reply(text, "instagram")
-                log_message(session_id, "instagram", "bot", reply)
-                save_lead(session_id, "instagram", intent=intent, notes=text[:500])
-                print("Instagram reply to send manually / wire via Graph API:", sender_id, reply)
+            reply, intent = build_reply(text, "instagram")
+            log_message(session_id, "instagram", "bot", reply)
+            save_lead(session_id, "instagram", intent=intent, notes=text[:500])
+
+            print(f"INSTAGRAM MESSAGE FROM {sender_id}: {text}", flush=True)
+            print(f"INSTAGRAM REPLY: {reply}", flush=True)
+            send_instagram_text(sender_id, reply)
 
     return jsonify({"status": "ok"})
 
 
-if __name__ == "__main__":
-    print("REGISTERED ROUTES:")
-    for rule in app.url_map.iter_rules():
-        print(rule)
+@app.route("/debug-webhook", methods=["POST"])
+def debug_webhook():
+    payload = request.get_json(silent=True) or {}
+    print("DEBUG WEBHOOK:", json.dumps(payload, indent=2), flush=True)
+    return jsonify({"ok": True})
 
-    port = int(os.environ.get("PORT", 10000))
-    app.run(host="0.0.0.0", port=port)
+
+if __name__ == "__main__":
+    app.run(host="0.0.0.0", port=int(os.environ.get("PORT", 5000)))
